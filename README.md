@@ -127,8 +127,6 @@ reply.getTranRequestDate();
 reply.getTranResponseDate();
 ```
 
-### b. Inquiry Transaction
-
 #### Request Creation
 
 ```java
@@ -140,12 +138,21 @@ req.setCurrencycode(currency);
 req.setAmt(amount);
 req.setTransid(transid);
 
-// Set proxy settings
-req.setProxy(true);
-req.setProxyHost("proxy.host");
-req.setProxyPort(1002);
+String proxyHost = "proxyhost";
+Integer proxyport = 8080;
+if(actionBy.equals("TRACKID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTrackId(req);
+} else if (actionBy.equals("PAYMENTID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByPaymentId(req);
+} else if (actionBy.equals("TRANID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTranId(req);
+} else if (actionBy.equals("REFNO")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByRefNo(req);
+}
 
 ```
+
+
 
 #### Inquiry Processing
 
@@ -178,9 +185,17 @@ req.setAmt(amount);
 req.setTransid(transid);
 
 // Set proxy settings
-req.setProxy(true);
-req.setProxyHost("proxy.host");
-req.setProxyPort(1002);
+String proxyHost = "proxyhost";
+Integer proxyport = 8080;
+if(actionBy.equals("TRACKID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTrackId(req);
+} else if (actionBy.equals("PAYMENTID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByPaymentId(req);
+} else if (actionBy.equals("TRANID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTranId(req);
+} else if (actionBy.equals("REFNO")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByRefNo(req);
+}
 
 ```
 
@@ -211,9 +226,17 @@ req.setAmt(amount);
 req.setTransid(transid);
 
 // Set proxy settings
-req.setProxy(true);
-req.setProxyHost("proxy.host");
-req.setProxyPort(1002);
+String proxyHost = "proxyhost";
+Integer proxyport = 8080;
+if(actionBy.equals("TRACKID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTrackId(req);
+} else if (actionBy.equals("PAYMENTID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByPaymentId(req);
+} else if (actionBy.equals("TRANID")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTranId(req);
+} else if (actionBy.equals("REFNO")){
+    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByRefNo(req);
+}
 ```
 
 #### Refund Processing
