@@ -68,8 +68,6 @@ splitPayLoad.setSplitAmount("10");
 // Add split payment details to the request
 req.addSplitPaymentPayload(splitPayLoad);
 
-
-
 // Prepare the request transaction data
 RequestTranData reqTranData = OabIpayRequestBuilder.prepareRequestTranData(req);
 ```
@@ -86,90 +84,116 @@ RequestTranData reqTranData = OabIpayRequestBuilder.prepareRequestTranData(req);
 </form>
 ```
 
-### Response Processing
+### b. Merchant Hosted Transaction (VBV Flow)
+
+In a **Merchant Hosted** (VBV 3D Secure) flow, the merchant collects the customer's card details (such as card number, expiry, CVV) and initiates the transaction from the backend server using the OAB Payment Gateway SDK.
+
+This method is used when merchants require a **seamless and customized checkout experience** while still redirecting the customer for 3D Secure authentication.
+
+#### Implementation Overview
+
+1. **Configure Request Details**\
+   Set the following transaction parameters:
+
+   - `keyPath` – Local path to the encryption key file
+   - `alias` – Merchant alias name provided by the bank
+   - `currencycode`, `langid`, `amt`, and `trackid`
+   - `responseURL` and `errorURL` – Merchant endpoints for post-authentication redirection
+
+2. **Populate UDF Fields (Optional)**\
+   Set values for UDF1 to UDF5 for custom tracking or metadata.
+
+3. **Collect and Assign Card Details**\
+   Securely collect and assign:
+
+   - Card number (`cardNo`)
+   - Cardholder name (`cardName`)
+   - Expiry month/year (`expMonth`, `expYear`)
+   - CVV2 (`cvv2`)
+
+   > ⚠️ *Card details must be collected over HTTPS and handled only in PCI-DSS-compliant environments.*
+
+4. **Configure Split Payment (Optional)**\
+   If using split payment:
+
+   - Set `splitPaymentIndicator` to "1"
+   - Create a `SplitPaymentPayload` and set:
+     - Alias
+     - Notes
+     - Type (1 = fixed)
+     - Reference (unique identifier)
+     - Split amount
+   - Add the payload to the request
+
+5. **Handle Tokenization (Optional)**\
+   If tokenization is supported and required:
+
+   - Set `tokenNo` (if available)
+   - Set `tokenFlag` based on action type (e.g., "2" for saving token)
+
+6. **Build and Send the Request**\
+   Below is an example of how the request is built:
 
 ```java
-// Define key details
-String keyPath = "/opt/filepath/";
-String alias = "aliasname";
-
-// Retrieve parameters from request
-String replyTranData = request.getParameter("trandata");
-String trackId = request.getParameter("trackId");
-
-// Create a new ReplyTranData instance and set values
-ReplyTranData tranData = new ReplyTranData();
-tranData.setKeyPath(keyPath);
-tranData.setAlias(alias);
-tranData.setTrandata(replyTranData);
-tranData.setTrackId(trackId);
-
-// Process the transaction response
-Reply reply = OabIpayReplyBuilder.prepareReply(tranData);
-
-// Retrieve result details
-reply.getResult();
-reply.getDate();
-reply.getRef();
-reply.getAuth();
-reply.getTrackId();
-reply.getTranId();
-reply.getAmt();
-reply.getUdf1();
-reply.getUdf2();
-reply.getUdf3();
-reply.getUdf4();
-reply.getUdf5();
-reply.getPaymentId();
-reply.getTokenNo();
-reply.getTranDate();
-reply.getTranRequestDate();
-reply.getTranResponseDate();
-```
-
-#### Request Creation
-
-```java
-// Create a new request instance
-Request req = new Request();
-req.setAlias(alias);
-req.setKeyPath(keyPath);
+req = new Request();
+req.setKeyPath(resourcePath);
+req.setAlias(aliasName);
 req.setCurrencycode(currency);
+req.setLangid(language);
+req.setResponseURL(receiptURL);
+req.setErrorURL(errorURL);
 req.setAmt(amount);
-req.setTransid(transid);
+req.setTrackid(trackid);
+req.setUdf1(udf1);
+req.setUdf2(udf2);
+req.setUdf3(udf3);
+req.setUdf4(udf4);
+req.setUdf5(udf5);
+req.setTokenNo(tokenNo);
+req.setTokenFlag(tokenFlag);
 
-String proxyHost = "proxyhost";
-Integer proxyport = 8080;
-if(actionBy.equals("TRACKID")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTrackId(req);
-} else if (actionBy.equals("PAYMENTID")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByPaymentId(req);
-} else if (actionBy.equals("TRANID")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTranId(req);
-} else if (actionBy.equals("REFNO")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByRefNo(req);
+req.setCardNo(cardNo);
+req.setCardName(cardName);
+req.setExpMonth(expMonth);
+req.setExpYear(expYear);
+req.setCvv2(cvv2);
+
+req.setSplitPaymentIndicator("1");
+SplitPaymentPayload splitPayLoad = new SplitPaymentPayload();
+splitPayLoad.setAliasName("accountalias");
+splitPayLoad.setNotes("Salary");
+splitPayLoad.setType("1");
+splitPayLoad.setReference(String.valueOf(Math.abs(new Random().nextInt())));
+splitPayLoad.setSplitAmount("10");
+req.addSplitPaymentPayload(splitPayLoad);
+
+if (tokenNo != null && tokenNo.isEmpty()) {
+    req.setTokenNo(tokenNo);
+    if ("1".equals(action)) {
+        req.setTokenFlag("2");
+    }
 }
 
+Reply reply = new OabIpayConnection().initiateTransaction(req);
 ```
 
+7. **Redirect Customer to Redirect URL**\
+   The customer should be redirected to the `redirectUrl` returned in the `Reply` to complete the 3D Secure authentication and finalize the transaction.
 
+#### Example Use Case
 
-#### Inquiry Processing
+This method is ideal for platforms with:
 
-```java
-Reply reply;
-if (/* transid is the original track ID */) {
-    reply = new OabIpayConnection().processInquiryByTrackId(req);
-} else if (/* transid is the original transaction ID */) {
-    reply = new OabIpayConnection().processInquiryByTranId(req);
-} else if (/* transid is the original payment ID */) {
-    reply = new OabIpayConnection().processInquiryByPaymentId(req);
-} else if (/* transid is the original reference number */) {
-    reply = new OabIpayConnection().processInquiryByRefNo(req);
-}
+- A fully branded checkout page
+- Secure server infrastructure
+- The need to manage card entry directly while using bank-hosted 3DS authentication
 
-reply.getResult();
-```
+#### Important Notes
+
+- The `redirectUrl` returned from the API must be used as-is, without modification.
+- Never log or store cardholder data.
+- Do not expose private keys, aliases, or card details on the client side.
+- Always enforce HTTPS for all communications.
 
 ### c. Reversal Transaction
 
@@ -196,7 +220,6 @@ if(actionBy.equals("TRACKID")){
 } else if (actionBy.equals("REFNO")){
     reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByRefNo(req);
 }
-
 ```
 
 #### Reversal Processing
@@ -257,6 +280,39 @@ reply.getResult();
 
 - Use HTTPS for all API calls.
 - Store API keys securely and never expose them in client-side code.
+
+## Response Parsing (Callback Handling)
+
+When the payment gateway redirects back to the merchant's `responseURL` or `errorURL`, the `trandata` is received as an encrypted string. This string must be parsed securely using the provided alias and key path.
+
+### Sample Response Parsing
+
+```java
+    String tranData = "6593A06B027BD3D4177C4D1055317118D2CB3D0523746881E8029E5185E230D0C727434597A49722A0453533AD05A2B9E28134E015010AEBFF2A17F12991C0CDABE706A4F6A1D5FC0B99ADD8AAA0004D867B920B0244BD5201F2F1D9D2725E9E13ECB9A9C236D458E0D88B2AFADD39C93302FAB3C6B2BEDDBDD6D95734E6E4872F6944DBC695D89B0C06BA44AB4BB0F406FEF46210DDF959338C5D3580CDB46887A44BF6BF7991A373394C1C12334A13FFF3C0D1CF24D1AC400BF5A4171A1BE88C3C762E6FF86976384940DC42EE35FA1078196607F4335D98A0C1398DB918976280A54125006473B3B5964B92F6D8779E13DD632767FE15BCB7E0D05E288DC5";
+  String keyPath = "/opt/filepath/";
+  String alias = "aliasname";
+
+    ReplyTranData replyTranData = new ReplyTranData();
+    replyTranData.setAlias(alias);
+    replyTranData.setKeyPath(keyPath);
+    replyTranData.setTrandata(tranData);
+
+    Reply reply = OabIpayReplyBuilder.prepareReply(replyTranData);
+
+    System.out.println("Reply Payment Id : " + reply.getPaymentId());
+    System.out.println("Reply Tran Id    : " + reply.getTranId());
+    System.out.println("Reply Result     : " + reply.getResult());
+    System.out.println("Reply Auth       : " + reply.getAuth());
+    System.out.println("Reply Track Id   : " + reply.getTrackId());
+    System.out.println("Reply Ref No     : " + reply.getRef());
+
+```
+
+### Notes
+- Ensure the `trandata` is read securely from the HTTP request.
+- The reply object provides all the transaction response fields.
+- Always validate the `Result` field to determine if the transaction was approved, declined, or failed.
+
 
 ## Support
 
