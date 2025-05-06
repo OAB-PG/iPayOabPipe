@@ -195,7 +195,7 @@ This method is ideal for platforms with:
 - Do not expose private keys, aliases, or card details on the client side.
 - Always enforce HTTPS for all communications.
 
-### c. Reversal Transaction
+### c. Inquiry / Reversal / Refund Transactions
 
 #### Request Creation
 
@@ -208,6 +208,12 @@ req.setCurrencycode(currency);
 req.setAmt(amount);
 req.setTransid(transid);
 
+```
+
+
+#### Inquiry Processing
+
+```java
 // Set proxy settings
 String proxyHost = "proxyhost";
 Integer proxyport = 8080;
@@ -222,10 +228,15 @@ if(actionBy.equals("TRACKID")){
 }
 ```
 
+
 #### Reversal Processing
 
 ```java
 Reply reply;
+// Set proxy settings
+String proxyHost = "proxyhost";
+Integer proxyport = 8080;
+
 if (/* transid is the original track ID */) {
     reply = new OabIpayConnection().processReversalByTrackId(req);
 } else if (/* transid is the original transaction ID */) {
@@ -235,34 +246,9 @@ if (/* transid is the original track ID */) {
 reply.getResult();
 ```
 
-### d. Refund Transaction
-
-#### Request Creation
-
-```java
-// Create a new request instance
-Request req = new Request();
-req.setAlias(alias);
-req.setKeyPath(keyPath);
-req.setCurrencycode(currency);
-req.setAmt(amount);
-req.setTransid(transid);
-
-// Set proxy settings
-String proxyHost = "proxyhost";
-Integer proxyport = 8080;
-if(actionBy.equals("TRACKID")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTrackId(req);
-} else if (actionBy.equals("PAYMENTID")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByPaymentId(req);
-} else if (actionBy.equals("TRANID")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTranId(req);
-} else if (actionBy.equals("REFNO")){
-    reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByRefNo(req);
-}
-```
-
 #### Refund Processing
+
+#### Split Request Creation
 
 ```java
 SplitPaymentPayload splitPaymentPayload = new SplitPaymentPayload();
@@ -272,6 +258,8 @@ splitPaymentPayload.setReference(refNumber);
 splitPaymentPayload.setSplitAmount(splitAmount);
 
 req.addSplitPaymentPayload(splitPaymentPayload);
+
+
 Reply reply = new OabIpayConnection().processRefundByTranId(req);
 reply.getResult();
 ```
