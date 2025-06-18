@@ -158,6 +158,23 @@ req.setExpMonth(expMonth);
 req.setExpYear(expYear);
 req.setCvv2(cvv2);
 
+// Set transaction type only for wallet-based flows:
+// AP = Apple Pay, SP = Samsung Pay, QR = QR Payment, AMP = Mobile Payment
+// ❗ Do NOT set type for card-based transactions
+req.setType("AP"); // Replace "AP" with "SP", "QR", or "AMP" as needed
+
+// Set sample browser/device context values
+req.setBrowserAcceptHeader("sample/browser-accept-header");
+req.setBrowserIP("sample.client.ip.address");
+req.setBrowserJavaEnabled(false); // or true based on client environment
+req.setBrowserJavascriptEnabled(true); // or false if JS is disabled
+req.setBrowserLanguage("en-US");
+req.setBrowserColorDepth("24");
+req.setBrowserScreenHeight("1080");
+req.setBrowserScreenWidth("1920");
+req.setBrowserTZ("+240"); // Browser timezone offset in minutes
+req.setBrowserUserAgent("sample-user-agent-string");
+
 req.setSplitPaymentIndicator("1");
 SplitPaymentPayload splitPayLoad = new SplitPaymentPayload();
 splitPayLoad.setAliasName("accountalias");
@@ -305,4 +322,3 @@ When the payment gateway redirects back to the merchant's `responseURL` or `erro
 ## Support
 
 For any issues or questions, contact our support team at **[pg-support@oman-arabbank.com](mailto\:pg-support@oman-arabbank.com)**.
-
