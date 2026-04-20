@@ -266,7 +266,7 @@ A transaction must be considered successful only when the returned result code m
 |---|---|---|
 | Purchase Transaction | `CAPTURED` | The purchase transaction is successful only when the result is `CAPTURED` |
 | Token Registration | `REGISTERED` | The card token registration is successful only when the result is `REGISTERED` |
-| Token De Registration | `DEREGISTERED` | The card token registration is successful only when the result is `REGISTERED` |
+| Token Deregistration | `DEREGISTERED` | The token deregistration transaction is successful only when the result is `DEREGISTERED` |
 | Inquiry Transaction | `SUCCESS` | The inquiry is successful only when the result is `SUCCESS` |
 | Reversal Transaction | `VOIDED` | The reversal is successful only when the result is `VOIDED` |
 | Card Refund | `CAPTURED` | The card refund is successful only when the result is `CAPTURED` |
@@ -280,6 +280,7 @@ Examples:
 
 - For purchase transactions, values such as `NOT CAPTURED` and `AUTH ERROR` must be treated as failure
 - For token registration, any value other than `REGISTERED` must be treated as failure
+- For token deregistration, any value other than `DEREGISTERED` must be treated as a failure.
 - For inquiry transactions, values such as `FAILURE(SUSPECT)`, `FAILURE(NOT CAPTURED)`, and `AUTH ERROR` must be treated as failure
 - For reversal transactions, any value other than `VOIDED` must be treated as failure
 - For card refund and account refund transactions, any value other than `CAPTURED` must be treated as failure
