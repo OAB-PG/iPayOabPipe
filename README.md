@@ -200,6 +200,32 @@ Reply reply = new OabIpayConnection().tokenizedCardPurchase(req);
 
 ```
 
+### g. Tokenized Purchase Transaction
+
+Use this flow to perform a purchase using a previously registered card token.
+
+```java
+Request req = new Request();
+
+req.setKeyPath(keyPath);
+req.setAlias(aliasName);
+req.setCurrencycode(currency);
+req.setTrackid(trackid);
+req.setTokenNumber(tokenNo);
+
+
+Reply reply = new OabIpayConnection().deleteRegisteredCardToken(req);
+
+```
+#### Notes
+
+* tokenNumber is mandatory for registered card token deregistration
+* The merchant must use the same merchant credentials that were used during token registration
+* The merchant should update its internal system after successful token deregistration
+* Any result other than the expected success result for this flow must be treated as a failure
+
+
+
 ## Callback Handling
 
 ```java
@@ -240,6 +266,7 @@ A transaction must be considered successful only when the returned result code m
 |---|---|---|
 | Purchase Transaction | `CAPTURED` | The purchase transaction is successful only when the result is `CAPTURED` |
 | Token Registration | `REGISTERED` | The card token registration is successful only when the result is `REGISTERED` |
+| Token De Registration | `DEREGISTERED` | The card token registration is successful only when the result is `REGISTERED` |
 | Inquiry Transaction | `SUCCESS` | The inquiry is successful only when the result is `SUCCESS` |
 | Reversal Transaction | `VOIDED` | The reversal is successful only when the result is `VOIDED` |
 | Card Refund | `CAPTURED` | The card refund is successful only when the result is `CAPTURED` |
