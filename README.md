@@ -200,7 +200,7 @@ Reply reply = new OabIpayConnection().tokenizedCardPurchase(req);
 
 ```
 
-### g. Tokenized Purchase Transaction
+### h. Token Deletion or Deregistration 
 
 Use this flow to perform a purchase using a previously registered card token.
 
@@ -223,7 +223,6 @@ Reply reply = new OabIpayConnection().deleteRegisteredCardToken(req);
 * The merchant must use the same merchant credentials that were used during token registration
 * The merchant should update its internal system after successful token deregistration
 * Any result other than the expected success result for this flow must be treated as a failure
-
 
 
 ## Callback Handling
