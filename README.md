@@ -9,7 +9,6 @@ This document outlines the steps required for a merchant to integrate with the O
 Before starting the integration, ensure the following:
 
 * **Key credentials:**
-
   * Key Path
   * Alias Name
 * Secure communication over HTTPS
@@ -60,17 +59,7 @@ req.addSplitPaymentPayload(splitPayLoad);
 
 RequestTranData reqTranData = OabIpayRequestBuilder.prepareRequestTranData(req);
 ```
-### b. Token Registration Transaction
 
-Important correction:
-- Removed `tokenNumber` and `tokenFlag`, as they are not required for token registration
-- Updated the amount to a small value such as `0`, in line with the token registration flow
-- Updated the builder call to `buildTokenRegistrationData(req)` to match the actual implementation
-- Do not include `splitPaymentIndicator` or `SplitPaymentPayload` in the card registration to token request
-- 
-```java
-RequestTranData reqTranData = OabIpayRequestBuilder.buildTokenRegistrationData(req);
-```
 #### Form Submission
 
 ```html
@@ -83,9 +72,62 @@ RequestTranData reqTranData = OabIpayRequestBuilder.buildTokenRegistrationData(r
 </form>
 ```
 
+### b. Token Registration Transaction
+
+Use this flow to register a card and generate a token for future tokenized transactions.
+
+#### Request Setup
+
+```java
+String keyPath = "/opt/filepath/";
+String alias = "aliasname";
+String currency = "512";
+String language = "EN";
+String receiptURL = "https://merchant.com/responseurl/";
+String errorURL = "https://merchant.com/errorurl/";
+String trackid = "87234234234";
+String amount = "0";
+
+Request req = new Request();
+req.setKeyPath(keyPath);
+req.setAlias(alias);
+req.setCurrencycode(currency);
+req.setLangid(language);
+req.setResponseURL(receiptURL);
+req.setErrorURL(errorURL);
+req.setAmt(amount);
+req.setTrackid(trackid);
+
+req.setUdf1("User Defined value 1");
+req.setUdf2("User Defined value 2");
+req.setUdf3("User Defined value 3");
+req.setUdf4("User Defined value 4");
+req.setUdf5("User Defined value 5");
+
+RequestTranData reqTranData = OabIpayRequestBuilder.buildTokenRegistrationData(req);
+```
+
+#### Form Submission
+
+```html
+<form action="<%=reqTranData.getWebAddress() %>" method="post">
+  <input type="hidden" name="tranportalId" value="<%= reqTranData.getTranportalId() %>" />
+  <input type="hidden" name="responseURL" value="<%= reqTranData.getResponseURL() %>" />
+  <input type="hidden" name="errorURL" value="<%= reqTranData.getErrorURL() %>" />
+  <input type="hidden" name="trandata" value="<%= reqTranData.getTrandata() %>" />
+  <button type="submit">Submit</button>
+</form>
+```
+
+#### Notes
+
+* `tokenNumber` and `tokenFlag` are not required for token registration
+* Use a small amount such as `0` for the token registration flow
+* Do not include `splitPaymentIndicator` or `SplitPaymentPayload` in the card registration to token request
+
 ### c. Merchant Hosted Transaction (VBV Flow)
 
-Merchant collects the customer's card details and submits from backend. 3D Secure authentication handled by redirecting the customer.
+Merchant collects the customer's card details and submits from backend. 3D Secure authentication is handled by redirecting the customer.
 
 #### Step-by-Step Integration
 
@@ -112,7 +154,7 @@ Reply reply;
 String proxyHost = "proxyhost";
 Integer proxyport = 8080;
 
-if(actionBy.equals("TRACKID")) {
+if (actionBy.equals("TRACKID")) {
   reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTrackId(req);
 } else if (actionBy.equals("TRANID")) {
   reply = new OabIpayConnection(proxyHost, proxyport).processInquiryByTranId(req);
@@ -139,7 +181,7 @@ req.addSplitPaymentPayload(splitPaymentPayload);
 Reply reply = new OabIpayConnection().processRefundByTranId(req);
 ```
 
-### f. Refund to Customer Account
+### e. Refund to Customer Account
 
 ```java
 Request req = new Request();
@@ -160,7 +202,7 @@ req.setTrackid(String.valueOf(Math.abs(new Random().nextInt())));
 Reply reply = new OabIpayConnection().refundToCustomerAccount(req);
 ```
 
-### g. Tokenized Purchase Transaction
+### f. Tokenized Purchase Transaction
 
 Use this flow to perform a purchase using a previously registered card token.
 
@@ -197,12 +239,11 @@ req.setUdf19(udf19);
 req.setUdf20(udf20);
 
 Reply reply = new OabIpayConnection().tokenizedCardPurchase(req);
-
 ```
 
-### h. Token Deletion or Deregistration 
+### g. Token Deletion or Deregistration
 
-Use this flow to perform a purchase using a previously registered card token.
+Use this flow to delete a previously registered card token.
 
 ```java
 Request req = new Request();
@@ -213,17 +254,114 @@ req.setCurrencycode(currency);
 req.setTrackid(trackid);
 req.setTokenNumber(tokenNo);
 
-
 Reply reply = new OabIpayConnection().deleteRegisteredCardToken(req);
-
 ```
+
 #### Notes
 
-* tokenNumber is mandatory for registered card token deregistration
+* `tokenNumber` is mandatory for registered card token deregistration
 * The merchant must use the same merchant credentials that were used during token registration
 * The merchant should update its internal system after successful token deregistration
 * Any result other than the expected success result for this flow must be treated as a failure
 
+### h. Apple Pay Direct Purchase Transaction
+
+Use this flow to perform an Apple Pay direct purchase by sending the wallet payment details in the request.
+
+#### Request Setup
+
+```java
+Request req = new Request();
+
+req.setKeyPath(keyPath);
+req.setAlias(aliasName);
+req.setCurrencycode(currencyCode);
+req.setLangid(language);
+req.setAmt(transactionAmount);
+req.setTrackid(trackid);
+req.setTranidentifer(tranidentifer);
+
+req.setUdf1(udf1);
+req.setUdf2(udf2);
+req.setUdf3(udf3);
+req.setUdf4(udf4);
+req.setUdf5(udf5);
+
+ThreeDSPayload threeDsPayload = new ThreeDSPayload();
+threeDsPayload.setApplicationPrimaryAccountNumber(dpan);
+threeDsPayload.setApplicationExpirationDate(expDate);
+threeDsPayload.setCurrencyCode(currencyCode);
+threeDsPayload.setTransactionAmount(transactionAmount);
+threeDsPayload.setDeviceManufacturerIdentifier(deviceManufacturerIdentifier);
+threeDsPayload.setPaymentDataType(paymentDataType);
+
+PaymentData paymentData = new PaymentData();
+paymentData.setOnlinePaymentCryptogram(onlinePaymentCryptogram);
+paymentData.setEciIndicator(eciIndicator);
+
+threeDsPayload.setPaymentData(paymentData);
+req.setThreeDSPayload(threeDsPayload);
+
+MrchAuthData mrchAuthData = new MrchAuthData();
+mrchAuthData.setDisplayName(displayName);
+mrchAuthData.setNetwork(network);
+mrchAuthData.setType(type);
+req.setMrchAuthData(mrchAuthData);
+
+Reply reply = new OabIpayConnection().applePayDirectPurchase(req);
+```
+
+#### Notes
+
+* Apple Pay direct purchase is a purchase transaction flow
+* The transaction must be considered successful only when `reply.getResult()` returns `CAPTURED`
+* DPAN, expiration date, transaction amount, cryptogram, and ECI indicator must be sent correctly in the request
+* The merchant must securely handle Apple Pay wallet data and must not log sensitive payment values
+
+### i. Samsung Pay Direct Purchase Transaction
+
+Use this flow to perform a Samsung Pay direct purchase by sending the wallet payment details in the request.
+
+#### Request Setup
+
+```java
+Request req = new Request();
+
+req.setKeyPath(keyPath);
+req.setAlias(aliasName);
+req.setCurrencycode(currencyCode);
+req.setLangid(language);
+req.setAmt(transactionAmount);
+req.setTrackid(trackid);
+req.setUdf5(udf5);
+
+ThreeDSPayload threeDsPayload = new ThreeDSPayload();
+threeDsPayload.setTokenPAN(dpan);
+threeDsPayload.setTokenPanExpiration(expDate);
+threeDsPayload.setUtc(utc);
+threeDsPayload.setAmount(transactionAmount);
+threeDsPayload.setCryptogram(onlinePaymentCryptogram);
+threeDsPayload.setCurrency_code(currencyCode);
+threeDsPayload.setEci_indicator(eciIndicator);
+
+req.setThreeDSPayload(threeDsPayload);
+
+MrchAuthData mrchAuthData = new MrchAuthData();
+mrchAuthData.setMethod(method);
+mrchAuthData.setRecurring_payment(recurring_payment);
+mrchAuthData.setCard_brand(card_brand);
+mrchAuthData.setCard_last4digits(card_last4digits);
+req.setMrchAuthData(mrchAuthData);
+
+Reply reply = new OabIpayConnection().samsungPayDirectPurchase(req);
+```
+
+#### Notes
+
+* Samsung Pay direct purchase is a purchase transaction flow
+* The transaction must be considered successful only when `reply.getResult()` returns `CAPTURED`
+* Token PAN, expiration date, UTC, amount, cryptogram, currency code, and ECI indicator must be sent correctly in the request
+* The merchant must securely handle Samsung Pay wallet data and must not log sensitive payment values
 
 ## Callback Handling
 
@@ -235,12 +373,13 @@ replyTranData.setKeyPath("/opt/filepath/");
 replyTranData.setTrandata(tranData);
 Reply reply = OabIpayReplyBuilder.prepareReply(replyTranData);
 ```
-### Response Handling and Result Description
 
-The merchant must validate the transaction outcome using `reply.getResult()`.  
+## Response Handling and Result Description
+
+The merchant must validate the transaction outcome using `reply.getResult()`.
 A transaction must be considered successful only when the returned result code matches the expected success code for that transaction type. Any other result code must be treated as a failure.
 
-#### Response Fields
+### Response Fields
 
 | Field | Description |
 |---|---|
@@ -259,36 +398,35 @@ A transaction must be considered successful only when the returned result code m
 | `reply.getCardName()` | Cardholder name associated with the card |
 | `reply.getUdf1()` to `reply.getUdf20()` | User-defined fields returned in the response, if provided in the request |
 
-#### Success Result Codes by Transaction Type
+### Success Result Codes by Transaction Type
 
 | Transaction Type | Success Result Code | Description |
 |---|---|---|
-| Purchase Transaction | `CAPTURED` | The purchase transaction is successful only when the result is `CAPTURED` |
-| Token Registration | `REGISTERED` | The card token registration is successful only when the result is `REGISTERED` |
+| Purchase Transaction | `CAPTURED` | Purchase transactions, including standard purchase, tokenized purchase, Apple Pay direct purchase, Samsung Pay direct purchase, card refund, and account refund, are successful only when the result is `CAPTURED` |
+| Token Registration | `REGISTERED` | The card token registration transaction is successful only when the result is `REGISTERED` |
 | Token Deregistration | `DEREGISTERED` | The token deregistration transaction is successful only when the result is `DEREGISTERED` |
-| Inquiry Transaction | `SUCCESS` | The inquiry is successful only when the result is `SUCCESS` |
-| Reversal Transaction | `VOIDED` | The reversal is successful only when the result is `VOIDED` |
-| Card Refund | `CAPTURED` | The card refund is successful only when the result is `CAPTURED` |
-| Account Refund | `CAPTURED` | The account refund is successful only when the result is `CAPTURED` |
+| Inquiry Transaction | `SUCCESS` | The inquiry transaction is successful only when the result is `SUCCESS` |
+| Reversal Transaction | `VOIDED` | The reversal transaction is successful only when the result is `VOIDED` |
 
-#### Failure Handling
+### Failure Handling
 
 Any result code other than the expected success result for the specific transaction type must be treated as a failure.
 
 Examples:
 
-- For purchase transactions, values such as `NOT CAPTURED` and `AUTH ERROR` must be treated as failure
-- For token registration, any value other than `REGISTERED` must be treated as failure
-- For token deregistration, any value other than `DEREGISTERED` must be treated as a failure.
-- For inquiry transactions, values such as `FAILURE(SUSPECT)`, `FAILURE(NOT CAPTURED)`, and `AUTH ERROR` must be treated as failure
-- For reversal transactions, any value other than `VOIDED` must be treated as failure
-- For card refund and account refund transactions, any value other than `CAPTURED` must be treated as failure
+* For purchase transactions, including Apple Pay direct purchase and Samsung Pay direct purchase, values such as `NOT CAPTURED` and `AUTH ERROR` must be treated as failure
+* For token registration, any value other than `REGISTERED` must be treated as failure
+* For token deregistration, any value other than `DEREGISTERED` must be treated as failure
+* For inquiry transactions, values such as `FAILURE(SUSPECT)`, `FAILURE(NOT CAPTURED)`, and `AUTH ERROR` must be treated as failure
+* For reversal transactions, any value other than `VOIDED` must be treated as failure
+* For card refund and account refund transactions, any value other than `CAPTURED` must be treated as failure
 
 ## Security Guidelines
 
 * All communication over HTTPS
-* Never log/store sensitive card data
+* Never log or store sensitive card data
 * Do not expose private key or alias on the client
+* Handle wallet payment data securely for Apple Pay and Samsung Pay transactions
 
 ## Support
 
